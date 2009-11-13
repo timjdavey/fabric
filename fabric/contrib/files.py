@@ -48,7 +48,7 @@ def first(*args, **kwargs):
 
 
 def upload_template(filename, destination, context=None, use_jinja=False,
-    template_dir=None, use_sudo=False):
+    template_dir=None, use_sudo=False, temp_destination=None):
     """
     Render and upload a template text file to a remote host.
 
@@ -70,8 +70,15 @@ def upload_template(filename, destination, context=None, use_jinja=False,
     user; specify ``use_sudo=True`` to use `sudo` instead.
     """
     basename = os.path.basename(filename)
-    temp_destination = '/tmp/' + basename
-
+    
+    # Cannot assume server has permissions to upload straight to /tmp/
+    if not temp_destination:
+        temp_destination = '~/' + basename
+    
+    # need to make sure this file doesn't already exist
+    while exists(temp_destination):
+        temp_destination = "%s~" % temp_destination
+    
     # This temporary file should not be automatically deleted on close, as we
     # need it there to upload it (Windows locks the file for reading while open).
     tempfile_fd, tempfile_name = tempfile.mkstemp()
